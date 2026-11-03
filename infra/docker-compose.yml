@@ -1,0 +1,21 @@
+services:
+  postgres-port:
+    image: postgres:16
+    container_name: postgres-port
+    environment:
+      POSTGRES_DB: portdb
+      POSTGRES_USER: port
+      POSTGRES_PASSWORD: port123
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-port-data:/var/lib/postgresql/data
+
+  kafka:
+    image: apache/kafka:latest
+    container_name: kafka
+    ports:
+      - "9092:9092"
+
+volumes:
+  postgres-port-data:

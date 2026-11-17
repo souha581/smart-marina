@@ -27,8 +27,8 @@ public class Pedestal {
     @Column(nullable = false, length = 100)
     private String name;
 
-    @Column(nullable = false, length = 100)
-    private String marina;
+    @Column(name = "port_id", nullable = false)
+    private Long portId;
 
     @Column(nullable = false, length = 50)
     private String pontoon;
@@ -48,8 +48,8 @@ public class Pedestal {
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
 
-    public String getMarina() { return marina; }
-    public void setMarina(String marina) { this.marina = marina; }
+    public Long getPortId() { return portId; }
+    public void setPortId(Long portId) { this.portId = portId; }
 
     public String getPontoon() { return pontoon; }
     public void setPontoon(String pontoon) { this.pontoon = pontoon; }

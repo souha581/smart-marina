@@ -1,7 +1,7 @@
 package com.xyz.smartpedestal.controller;
 
 import com.xyz.smartpedestal.dto.PedestalRequest;
-import com.xyz.smartpedestal.entity.Pedestal;
+import com.xyz.smartpedestal.dto.PedestalResponse;
 import com.xyz.smartpedestal.service.PedestalService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -29,23 +29,23 @@ public class PedestalController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Pedestal create(@Valid @RequestBody PedestalRequest request) {
+    public PedestalResponse create(@Valid @RequestBody PedestalRequest request) {
         return service.create(request);
     }
 
     @GetMapping
-    public List<Pedestal> findAll() {
+    public List<PedestalResponse> findAll() {
         return service.findAll();
     }
 
     @GetMapping("/{id}")
-    public Pedestal findById(@PathVariable Long id) {
+    public PedestalResponse findById(@PathVariable Long id) {
         return service.findById(id);
     }
 
     @PutMapping("/{id}")
-    public Pedestal update(@PathVariable Long id,
-                           @Valid @RequestBody PedestalRequest request) {
+    public PedestalResponse update(@PathVariable Long id,
+                                   @Valid @RequestBody PedestalRequest request) {
         return service.update(id, request);
     }
 

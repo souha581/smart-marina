@@ -1,6 +1,8 @@
 package com.xyz.smartpedestal.service;
 
+import com.xyz.smartpedestal.client.PortClient;
 import com.xyz.smartpedestal.dto.PedestalRequest;
+import com.xyz.smartpedestal.dto.PedestalResponse;
 import com.xyz.smartpedestal.entity.Pedestal;
 import com.xyz.smartpedestal.repository.PedestalRepository;
 import org.springframework.http.HttpStatus;
@@ -15,35 +17,39 @@ import java.util.List;
 public class PedestalService {
 
     private final PedestalRepository repository;
+    private final PortClient portClient;
 
-    public PedestalService(PedestalRepository repository) {
+    public PedestalService(PedestalRepository repository, PortClient portClient) {
         this.repository = repository;
+        this.portClient = portClient;
     }
 
     @Transactional(readOnly = true)
-    public List<Pedestal> findAll() {
-        return repository.findAll();
+    public List<PedestalResponse> findAll() {
+        return repository.findAll().stream()
+                .map(PedestalResponse::from)
+                .toList();
     }
 
     @Transactional(readOnly = true)
-    public Pedestal findById(Long id) {
-        return repository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "Borne introuvable : " + id));
+    public PedestalResponse findById(Long id) {
+        return PedestalResponse.from(getPedestal(id));
     }
 
-    public Pedestal create(PedestalRequest request) {
+    public PedestalResponse create(PedestalRequest request) {
+        checkPortExists(request.portId());
         if (repository.existsBySerialNumber(request.serialNumber())) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT, "Numéro de série déjà utilisé");
         }
         Pedestal p = new Pedestal();
         copyRequest(request, p);
-        return repository.save(p);
+        return PedestalResponse.from(repository.save(p));
     }
 
-    public Pedestal update(Long id, PedestalRequest request) {
-        Pedestal p = findById(id);
+    public PedestalResponse update(Long id, PedestalRequest request) {
+        Pedestal p = getPedestal(id);
+        checkPortExists(request.portId());
         repository.findBySerialNumber(request.serialNumber())
                 .filter(existing -> !existing.getId().equals(id))
                 .ifPresent(existing -> {
@@ -51,17 +57,30 @@ public class PedestalService {
                             HttpStatus.CONFLICT, "Numéro de série déjà utilisé");
                 });
         copyRequest(request, p);
-        return repository.save(p);
+        return PedestalResponse.from(repository.save(p));
     }
 
     public void delete(Long id) {
-        repository.delete(findById(id));
+        repository.delete(getPedestal(id));
+    }
+
+    private Pedestal getPedestal(Long id) {
+        return repository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Borne introuvable : " + id));
+    }
+
+    private void checkPortExists(Long portId) {
+        if (!portClient.portExists(portId)) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Port introuvable : " + portId);
+        }
     }
 
     private void copyRequest(PedestalRequest request, Pedestal p) {
         p.setSerialNumber(request.serialNumber());
         p.setName(request.name());
-        p.setMarina(request.marina());
+        p.setPortId(request.portId());
         p.setPontoon(request.pontoon());
         p.setStatus(request.status());
     }

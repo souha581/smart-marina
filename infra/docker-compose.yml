@@ -23,6 +23,18 @@ services:
     volumes:
       - postgres-pedestal-data:/var/lib/postgresql/data
 
+  postgres-consumption:
+    image: postgres:16
+    container_name: postgres-consumption
+    environment:
+      POSTGRES_DB: consumptiondb
+      POSTGRES_USER: consumption
+      POSTGRES_PASSWORD: consumption123
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres-consumption-data:/var/lib/postgresql/data
+
   kafka:
     image: apache/kafka:latest
     container_name: kafka
@@ -32,3 +44,4 @@ services:
 volumes:
   postgres-port-data:
   postgres-pedestal-data:
+  postgres-consumption-data:

@@ -4,8 +4,10 @@ import com.xyz.consumptionservice.client.PedestalClient;
 import com.xyz.consumptionservice.dto.ConsumptionRequest;
 import com.xyz.consumptionservice.dto.ConsumptionResponse;
 import com.xyz.consumptionservice.entity.Consumption;
+import com.xyz.consumptionservice.event.ConsumptionEvent;
 import com.xyz.consumptionservice.repository.ConsumptionRepository;
 import org.springframework.http.HttpStatus;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -19,11 +21,14 @@ public class ConsumptionService {
 
     private final ConsumptionRepository repository;
     private final PedestalClient pedestalClient;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     public ConsumptionService(ConsumptionRepository repository,
-                              PedestalClient pedestalClient) {
+                              PedestalClient pedestalClient,
+                              KafkaTemplate<String, Object> kafkaTemplate) {
         this.repository = repository;
         this.pedestalClient = pedestalClient;
+        this.kafkaTemplate = kafkaTemplate;
     }
 
     @Transactional(readOnly = true)
@@ -55,7 +60,23 @@ public class ConsumptionService {
         c.setUnit(request.unit());
         c.setRecordedAt(LocalDateTime.now());
 
-        return ConsumptionResponse.from(repository.save(c));
+        // 1. Save to database
+        Consumption saved = repository.save(c);
+
+        // 2. Build the event
+        ConsumptionEvent event = new ConsumptionEvent(
+                saved.getId(),
+                saved.getPedestalId(),
+                saved.getType().name(),
+                saved.getValue(),
+                saved.getUnit(),
+                saved.getRecordedAt().toString()
+        );
+
+        // 3. Publish to Kafka!
+        kafkaTemplate.send("consumption-events", saved.getPedestalId().toString(), event);
+
+        return ConsumptionResponse.from(saved);
     }
 
     public void delete(Long id) {

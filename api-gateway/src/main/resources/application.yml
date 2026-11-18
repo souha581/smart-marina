@@ -1,0 +1,21 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      server:
+        webflux:
+          default-filters:
+            - AddResponseHeader=X-Gateway, smart-marina-gateway
+          routes:
+            - id: port-service
+              uri: http://localhost:8081
+              predicates:
+                - Path=/api/v1/ports/**
+            - id: pedestal-service
+              uri: http://localhost:8082
+              predicates:
+                - Path=/api/v1/pedestals/**

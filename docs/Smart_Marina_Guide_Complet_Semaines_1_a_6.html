@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Smart Marina — Guide Complet du Projet (Semaines 1 à 6)</title>
+<style>
+  @page {
+    size: A4;
+    margin: 20mm 15mm 20mm 15mm;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #24292f;
+    line-height: 1.6;
+    font-size: 13.5px;
+    padding: 0;
+    margin: 0;
+  }
+  h1 {
+    font-size: 24px;
+    color: #0969da;
+    border-bottom: 2px solid #eaecef;
+    padding-bottom: 8px;
+    margin-top: 0;
+  }
+  h2 {
+    font-size: 18px;
+    color: #1f2328;
+    border-bottom: 1px solid #eaecef;
+    padding-bottom: 6px;
+    margin-top: 26px;
+    page-break-after: avoid;
+  }
+  h3 {
+    font-size: 15px;
+    color: #1f2328;
+    margin-top: 18px;
+    page-break-after: avoid;
+  }
+  p, ul, ol {
+    margin-top: 0;
+    margin-bottom: 12px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 14px 0;
+    font-size: 12.5px;
+    page-break-inside: avoid;
+  }
+  th, td {
+    border: 1px solid #d0d7de;
+    padding: 7px 10px;
+    text-align: left;
+  }
+  th {
+    background-color: #f6f8fa;
+    font-weight: 600;
+  }
+  tr:nth-child(even) {
+    background-color: #fafbfc;
+  }
+  code {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 11.5px;
+    background-color: #eff1f3;
+    padding: 2px 5px;
+    border-radius: 4px;
+  }
+  pre {
+    background-color: #f6f8fa;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    padding: 10px;
+    overflow-x: auto;
+    font-size: 11.5px;
+    line-height: 1.4;
+    page-break-inside: avoid;
+  }
+  pre code {
+    background-color: transparent;
+    padding: 0;
+  }
+  .box {
+    background-color: #ddf4ff;
+    border-left: 4px solid #0969da;
+    padding: 10px 14px;
+    border-radius: 4px;
+    margin: 14px 0;
+    page-break-inside: avoid;
+  }
+  .warn-box {
+    background-color: #fff8c5;
+    border-left: 4px solid #9a6700;
+    padding: 10px 14px;
+    border-radius: 4px;
+    margin: 14px 0;
+    page-break-inside: avoid;
+  }
+  .page-break {
+    page-break-before: always;
+  }
+</style>
+</head>
+<body>
+
+<h1>🛥️ SMART MARINA — Guide Complet du Projet (Semaines 1 à 6)</h1>
+<p><strong>Module :</strong> Atelier SOA & Microservices | <strong>Auteur :</strong> Projet Smart Marina | <strong>Technologies :</strong> Spring Boot, Docker, PostgreSQL, API Gateway, Apache Kafka</p>
+
+<div class="box">
+  <strong>Objectif de ce document :</strong><br>
+  Expliquer de façon simple et accessible tout ce qui a été réalisé de la semaine 1 à la semaine 6 : le rôle de chaque composant, les outils utilisés (Docker, Postman, Spring Boot, Kafka), l'architecture et les questions types pour la soutenance.
+</div>
+
+<h2>1. La Vue d'Ensemble : C'est quoi Smart Marina ?</h2>
+<p>Dans un port de plaisance traditionnel, la gestion des bateaux, des quais, de l'électricité et de l'eau se fait souvent sur papier. <strong>Smart Marina</strong> est un système distribué moderne qui automatise toute la gestion du port :</p>
+<ul>
+  <li><strong>Gestion des Ports (<code>port-service</code>) :</strong> Enregistre les ports maritimes (ex. : Port de Sidi Bou Said).</li>
+  <li><strong>Gestion des Bornes (<code>pedestal-service</code>) :</strong> Gère les bornes physiques sur les pontons où les bateaux se branchent.</li>
+  <li><strong>Gestion des Consommations (<code>consumption-service</code>) :</strong> Enregistre les consommations d'électricité (kWh) et d'eau (m³).</li>
+  <li><strong>Gestion des Alertes (<code>notification-service</code>) :</strong> Écoute en temps réel et avertit dès qu'un seuil critique est dépassé.</li>
+  <li><strong>Porte d'Entrée Unique (<code>api-gateway</code>) :</strong> Reçoit toutes les requêtes extérieures et les achemine vers le bon microservice.</li>
+</ul>
+
+<p>Au lieu de créer un seul gros programme géant (appelé <strong>Monolithe</strong>), nous avons découpé l'application en <strong>Microservices</strong> indépendants. Si un microservice tombe en panne, tous les autres continuent de fonctionner sans problème.</p>
+
+<h2>2. Les Outils Expliqués Simplement</h2>
+
+<h3>C'est quoi Spring Boot ?</h3>
+<p>Java tout seul nécessite des centaines de lignes de configuration juste pour lancer un serveur web. <strong>Spring Boot</strong> fournit des "briques Lego prémontées" avec un serveur web intégré (Tomcat ou Netty). Il suffit d'ajouter quelques annotations comme <code>@RestController</code> ou <code>@Service</code> pour que Spring gère la base de données, les routes web et le format JSON automatiquement.</p>
+
+<h3>C'est quoi Docker & Qu'est-ce qui tourne dedans ?</h3>
+<p><strong>Docker</strong> permet d'exécuter des logiciels dans des boîtes fermées et isolées appelées <strong>Conteneurs</strong>. Cela évite d'installer manuellement 3 bases de données PostgreSQL et un serveur Kafka sur Windows, ce qui créerait des conflits de ports et ralentirait l'ordinateur.</p>
+
+<p>Dans votre fichier <code>infra/docker-compose.yml</code>, vous avez <strong>4 conteneurs</strong> actifs dans Docker Desktop :</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Nom du Conteneur</th>
+      <th>Port sur votre PC</th>
+      <th>Rôle</th>
+      <th>Pourquoi est-il séparé ?</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>postgres-port</code></td>
+      <td><code>5433</code></td>
+      <td>Base de données des ports (<code>portdb</code>)</td>
+      <td>Propriété exclusive de <code>port-service</code></td>
+    </tr>
+    <tr>
+      <td><code>postgres-pedestal</code></td>
+      <td><code>5434</code></td>
+      <td>Base de données des bornes (<code>pedestaldb</code>)</td>
+      <td>Propriété exclusive de <code>pedestal-service</code></td>
+    </tr>
+    <tr>
+      <td><code>postgres-consumption</code></td>
+      <td><code>5435</code></td>
+      <td>Base des relevés (<code>consumptiondb</code>)</td>
+      <td>Propriété exclusive de <code>consumption-service</code></td>
+    </tr>
+    <tr>
+      <td><code>kafka</code></td>
+      <td><code>9092</code></td>
+      <td>Courtier de messages Apache Kafka</td>
+      <td>Transmet les événements asynchrones</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="warn-box">
+  <strong>Règle d'or de l'architecture Microservices : "Une base de données par service"</strong><br>
+  Chaque microservice possède sa propre base. Un microservice n'a <strong>jamais le droit</strong> de lire ou d'écrire directement dans la base d'un autre microservice ! Pour obtenir une information, il doit toujours passer par une requête d'API ou un événement.
+</div>
+
+<h3>C'est quoi Postman ?</h3>
+<p>Comme notre système n'a pas encore d'interface graphique (boutons, pages web), il ne communique qu'en données brutes (JSON). <strong>Postman</strong> est notre client de test. Il permet d'envoyer des requêtes HTTP (<code>GET</code> pour lire, <code>POST</code> pour créer, <code>PUT</code> pour modifier, <code>DELETE</code> pour supprimer) et de vérifier les codes de réponse (<code>200 OK</code>, <code>201 Created</code>, <code>400 Bad Request</code>, <code>503 Service Unavailable</code>).</p>
+
+<h3>C'est quoi Apache Kafka ?</h3>
+<p>Kafka est un système de messagerie asynchrone ultra-rapide. On peut le comparer à un tableau d'affichage ou une boîte aux lettres de capitainerie :</p>
+<ul>
+  <li><strong>Le Producteur (<code>consumption-service</code>) :</strong> Dépose une annonce : <em>"La borne #3 a consommé 75 kWh"</em> et continue son travail immédiatement sans attendre.</li>
+  <li><strong>Le Sujet / Topic (<code>consumption-events</code>) :</strong> La catégorie du tableau où cette annonce est épinglée.</li>
+  <li><strong>Le Consommateur (<code>notification-service</code>) :</strong> Lit l'annonce et déclenche une alerte si la valeur est anormale.</li>
+</ul>
+
+<div class="page-break"></div>
+
+<h2>3. Le Schéma de l'Architecture Globale</h2>
+
+<pre><code>
+Client / Postman
+       │
+       ▼ (Toutes les requêtes arrivent sur le Port 8080)
+┌────────────────────────────────────────────────────────┐
+│                   API GATEWAY (8080)                   │
+│   • Achemine /api/v1/ports/**        ──► Port 8081    │
+│   • Achemine /api/v1/pedestals/**    ──► Port 8082    │
+│   • Achemine /api/v1/consumptions/** ──► Port 8083    │
+│   • Ajoute l'en-tête : X-Gateway: smart-marina-gateway │
+└────────────────────────────────────────────────────────┘
+       │                 │                 │
+       ▼                 ▼                 ▼
+ ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐
+ │ port-service │  │pedestal-serv.│  │consumption-serv. │
+ │  Port: 8081  │  │  Port: 8082  │  │   Port: 8083     │
+ └──────┬───────┘  └──────┬───────┘  └────────┬─────────┘
+        │                 │                   │
+        │                 │ (Appel REST)      │ (Appel REST)
+        │                 ├───────────────────┤
+        │                 │ "Le port existe?" │ "La borne existe?"
+        ▼                 ▼                   ▼
+  [(postgres-port)] [(postgres-ped.)]  [(postgres-cons.)]
+    Port: 5433        Port: 5434          Port: 5435
+                                              │
+                                              ▼ (Événement Kafka)
+                                   ╔═════════════════════════╗
+                                   ║    APACHE KAFKA (9092)  ║
+                                   ║ Topic: consumption-events║
+                                   ╚═════════════════════════╝
+                                              │
+                                              ▼ (Asynchrone)
+                                    ┌───────────────────┐
+                                    │ notification-serv.│
+                                    │    Port: 8084     │
+                                    │ (Alertes en direct)
+                                    └───────────────────┘
+</code></pre>
+
+<h2>4. Les 5 Couches d'un Microservice Spring Boot</h2>
+<p>Chacun de vos microservices est structuré avec rigueur selon les standards industriels :</p>
+<ol>
+  <li><strong>Entité (<code>Entity</code>, ex. <code>Port.java</code>) :</strong> Représente directement la table dans PostgreSQL. Ses attributs correspondent aux colonnes de la table.</li>
+  <li><strong>DTO (<code>Data Transfer Object</code>, ex. <code>PortRequest.java</code>) :</strong> Le garde du corps. Il contrôle et valide les données qui entrent et sortent avec des règles strictes (<code>@NotBlank</code>, <code>@NotNull</code>, <code>@Positive</code>).</li>
+  <li><strong>Dépôt (<code>Repository</code>, ex. <code>PortRepository.java</code>) :</strong> Communique avec PostgreSQL. Grâce à Spring Data JPA, les requêtes SQL sont créées automatiquement sans écrire une seule ligne de SQL !</li>
+  <li><strong>Service (<code>Service</code>, ex. <code>PortService.java</code>) :</strong> Le cerveau du microservice. Il contient la logique métier (vérifier les doublons, appliquer les règles).</li>
+  <li><strong>Contrôleur (<code>Controller</code>, ex. <code>PortController.java</code>) :</strong> La réceptionniste. Il écoute les requêtes HTTP (<code>@GetMapping</code>, <code>@PostMapping</code>) et renvoie les réponses en JSON.</li>
+  <li><strong>Client (<code>Client</code>, ex. <code>PortClient.java</code>) :</strong> Le téléphone du microservice. Utilise <code>RestClient</code> pour appeler un autre service en HTTP.</li>
+</ol>
+
+<div class="page-break"></div>
+
+<h2>5. Déroulement Semaine par Semaine (Semaines 1 à 6)</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Semaine</th>
+      <th>Service / Thème</th>
+      <th>Port</th>
+      <th>Ce qui a été réalisé</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Semaine 1</strong></td>
+      <td>Installation & Git</td>
+      <td>—</td>
+      <td>Installation de Java 21, Maven, Docker, IntelliJ, Postman et initialisation du dépôt Git.</td>
+    </tr>
+    <tr>
+      <td><strong>Semaine 2</strong></td>
+      <td><code>port-service</code></td>
+      <td><code>8081</code></td>
+      <td>Premier microservice complet (CRUD Port) avec sa base PostgreSQL dédiée sur le port 5433. Validation avec DTOs.</td>
+    </tr>
+    <tr>
+      <td><strong>Semaine 3</strong></td>
+      <td><code>pedestal-service</code></td>
+      <td><code>8082</code></td>
+      <td>Deuxième microservice avec sa propre base (5434). Communication synchrone REST via <code>RestClient</code> pour vérifier l'existence du port. Erreur 400 si port absent, 503 si port-service est éteint.</td>
+    </tr>
+    <tr>
+      <td><strong>Semaine 4</strong></td>
+      <td><code>api-gateway</code></td>
+      <td><code>8080</code></td>
+      <td>Passerelle Spring Cloud Gateway (WebFlux). Point d'entrée unique. Routage des URL et ajout de l'en-tête <code>X-Gateway</code>. Preuve d'isolation des pannes.</td>
+    </tr>
+    <tr>
+      <td><strong>Semaine 5</strong></td>
+      <td><code>consumption-service</code></td>
+      <td><code>8083</code></td>
+      <td>Troisième microservice avec base (5435). Enregistre les consommations d'eau et d'électricité liées aux bornes. Vérifie l'existence de la borne auprès de <code>pedestal-service</code>.</td>
+    </tr>
+    <tr>
+      <td><strong>Semaine 6</strong></td>
+      <td><code>notification-service</code> + Kafka</td>
+      <td><code>8084</code></td>
+      <td>Architecture Événementielle (EDA). Producteur Kafka dans consumption-service. Sujet <code>consumption-events</code>. Consommateur dans notification-service avec détection en temps réel des surconsommations (> 50 kWh).</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>6. Synchrone vs Asynchrone : La Règle d'Or</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Critère</th>
+      <th>Synchrone (REST / HTTP)</th>
+      <th>Asynchrone (Kafka / Événements)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Métaphore</strong></td>
+      <td>Appel téléphonique (les deux doivent être là)</td>
+      <td>Courrier postal (déposé dans la boîte, lu plus tard)</td>
+    </tr>
+    <tr>
+      <td><strong>Exemple Smart Marina</strong></td>
+      <td><code>pedestal-service</code> appelle <code>port-service</code></td>
+      <td><code>consumption-service</code> annonce un relevé à Kafka</td>
+    </tr>
+    <tr>
+      <td><strong>Si le destinataire est en panne</strong></td>
+      <td>L'appel échoue immédiatement (Erreur <code>503</code>)</td>
+      <td>Le message attend dans Kafka et sera lu au redémarrage</td>
+    </tr>
+    <tr>
+      <td><strong>Couplage</strong></td>
+      <td>Fort (doit connaître l'adresse IP et le port)</td>
+      <td>Lâche (le producteur ignore qui écoute le sujet)</td>
+    </tr>
+    <tr>
+      <td><strong>La Règle d'Or</strong></td>
+      <td>À utiliser quand on a <strong>besoin de la réponse pour continuer</strong></td>
+      <td>À utiliser quand on doit <strong>seulement annoncer qu'un fait s'est produit</strong></td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>7. Préparation à la Soutenance : Questions & Réponses Types</h2>
+
+<div class="box">
+  <strong>Q1 : Pourquoi utiliser une architecture microservices au lieu d'un monolithe ?</strong><br>
+  <strong>Réponse :</strong> Pour l'isolation des pannes (si le service de notification plante, les ports et les bornes continuent de marcher), pour l'indépendance de déploiement et de montée en charge (scaler un seul service très sollicité sans dupliquer tout le système).
+</div>
+
+<div class="box">
+  <strong>Q2 : Pourquoi chaque microservice a-t-il sa propre base de données ?</strong><br>
+  <strong>Réponse :</strong> C'est le principe du "Database-per-Service". Cela garantit un couplage faible. Si les services partageaient une base unique, une modification de table par une équipe pourrait casser les autres services, et une panne de la base paralyserait tout le port.
+</div>
+
+<div class="box">
+  <strong>Q3 : Quel est le rôle de l'API Gateway et que ne doit-elle SURTOUT PAS faire ?</strong><br>
+  <strong>Réponse :</strong> Elle sert de porte d'entrée unique pour tous les clients externes, gère le routage et la sécurité centrale. Elle ne doit <strong>jamais contenir de logique métier</strong> (calculs, règles de gestion), qui doit rester dans les microservices.
+</div>
+
+<div class="box">
+  <strong>Q4 : Pourquoi avoir choisi <code>pedestalId</code> comme clé de partitionnement Kafka ?</strong><br>
+  <strong>Réponse :</strong> Kafka garantit l'ordre des messages uniquement à l'intérieur d'une partition. En utilisant l'identifiant de la borne comme clé, tous les relevés d'une même borne sont garantis d'être traités dans l'ordre chronologique exact.
+</div>
+
+</body>
+</html>

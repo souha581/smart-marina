@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Smart Marina XYZ — Réponses aux Questions de Préparation</title>
+<style>
+  @page {
+    size: A4;
+    margin: 18mm 14mm 18mm 14mm;
+    @bottom-right {
+      content: counter(page);
+    }
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #24292f;
+    line-height: 1.5;
+    font-size: 13px;
+    padding: 0;
+    margin: 0;
+  }
+  h1 {
+    font-size: 22px;
+    color: #0969da;
+    border-bottom: 2px solid #0969da;
+    padding-bottom: 6px;
+    margin-top: 0;
+    margin-bottom: 8px;
+  }
+  h2 {
+    font-size: 16px;
+    color: #ffffff;
+    background-color: #0969da;
+    padding: 6px 10px;
+    border-radius: 4px;
+    margin-top: 22px;
+    margin-bottom: 12px;
+    page-break-after: avoid;
+  }
+  h3 {
+    font-size: 14px;
+    color: #0969da;
+    border-left: 3px solid #0969da;
+    padding-left: 8px;
+    margin-top: 16px;
+    margin-bottom: 6px;
+    page-break-after: avoid;
+  }
+  p, ul, ol {
+    margin-top: 0;
+    margin-bottom: 8px;
+  }
+  li {
+    margin-bottom: 4px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0;
+    font-size: 12px;
+    page-break-inside: avoid;
+  }
+  th, td {
+    border: 1px solid #d0d7de;
+    padding: 6px 8px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background-color: #f6f8fa;
+    font-weight: 600;
+  }
+  tr:nth-child(even) {
+    background-color: #fafbfc;
+  }
+  code {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 11px;
+    background-color: #eff1f3;
+    padding: 2px 4px;
+    border-radius: 3px;
+  }
+  pre {
+    background-color: #f6f8fa;
+    border: 1px solid #d0d7de;
+    border-radius: 4px;
+    padding: 8px 10px;
+    overflow-x: auto;
+    font-size: 11px;
+    line-height: 1.35;
+    page-break-inside: avoid;
+    margin: 8px 0;
+  }
+  pre code {
+    background-color: transparent;
+    padding: 0;
+  }
+  .highlight-box {
+    background-color: #f0f7ff;
+    border-left: 3px solid #0969da;
+    padding: 8px 12px;
+    margin: 8px 0;
+    border-radius: 0 4px 4px 0;
+    page-break-inside: avoid;
+  }
+  .pts {
+    float: right;
+    font-weight: normal;
+    color: #656d76;
+    font-size: 12px;
+  }
+  .page-break {
+    page-break-before: always;
+  }
+</style>
+</head>
+<body>
+
+<h1>🛥️ Smart Marina XYZ — Corrigé Complet & Questions de Préparation</h1>
+<p style="margin-bottom: 12px;"><strong>Module :</strong> Atelier SOA & Microservices | <strong>Architecture :</strong> REST, API Gateway, Docker, PostgreSQL, Apache Kafka</p>
+
+<h2>Partie A. Comprendre : synchrone, asynchrone, couplage</h2>
+
+<h3>Question 1 <span class="pts">(3 pts)</span> : Différence communication synchrone vs asynchrone + Exemples Smart Marina</h3>
+<p><strong>1. Communication Synchrone (bloquante / temps réel) :</strong></p>
+<ul>
+  <li>L'émetteur envoie une requête et <strong>bloque son exécution en attendant la réponse immédiate</strong> du récepteur. Si le récepteur est indisponible ou lent, l'émetteur échoue ou subit un temps d'attente (timeout).</li>
+  <li><em>Analogie :</em> Un appel téléphonique ou un échange radio VHF.</li>
+  <li><em>Exemple Smart Marina :</em> <strong><code>pedestal-service</code> appelle <code>port-service</code></strong> en HTTP REST pour vérifier qu'un port existe avant de créer une borne. Sans réponse immédiate, impossible de valider la création.</li>
+</ul>
+<p><strong>2. Communication Asynchrone (non-bloquante / orientée message) :</strong></p>
+<ul>
+  <li>L'émetteur publie un message/événement dans un intermédiaire (broker comme Kafka) et <strong>reprend son travail immédiatement sans attendre</strong> que le ou les consommateurs aient traité le message.</li>
+  <li><em>Analogie :</em> Déposer un courrier dans une boîte aux lettres.</li>
+  <li><em>Exemple Smart Marina :</em> <strong><code>consumption-service</code> publie l'événement <code>ConsommationRelevee</code></strong> dans Kafka. Il répond immédiatement <code>201 Created</code> au client pendant que <code>notification-service</code> et <code>facturation-service</code> consomment l'événement à leur propre rythme.</li>
+</ul>
+
+<h3>Question 2 <span class="pts">(3 pts)</span> : Pourquoi ne pas tout faire en synchrone ? Risques encourus ?</h3>
+<p>Si tout est fait en synchrone dans une architecture microservices, on subit des risques critiques :</p>
+<ol>
+  <li><strong>Effet domino (pannes en cascade) :</strong> Si le service Notification ou Facturation est en panne, l'enregistrement d'une simple consommation de borne échoue, alors que la mesure a bel et bien eu lieu.</li>
+  <li><strong>Dégradation exponentielle des performances :</strong> Le temps de réponse total devient la somme des temps de réponse de tous les services appelés en chaîne ($T_{total} = T_1 + T_2 + T_3 + \dots$).</li>
+  <li><strong>Couplage temporel et spatial fort :</strong> Tous les services doivent être en ligne et joignables à la même milliseconde.</li>
+  <li><strong>Perte de résilience face aux pics de charge :</strong> Une vague d'appels simultanés sature tous les threads des serveurs web (Tomcat) et provoque un effondrement global du système.</li>
+</ol>
+
+<h3>Question 3 <span class="pts">(3 pts)</span> : Pourquoi ne pas tout faire en asynchrone ?</h3>
+<ol>
+  <li><strong>Nécessité d'une réponse immédiate pour l'utilisateur :</strong> Lorsqu'un plaisancier ouvre l'application pour voir les emplacements libres ou son profil, il attend les données à l'écran tout de suite. On ne peut pas lui répondre « votre demande est dans la file d'attente, revenez dans 5 minutes ».</li>
+  <li><strong>Complexité opérationnelle élevée :</strong> L'asynchrone impose la gestion de l'idempotence, de la cohérence éventuelle, des messages en double, des transactions distribuées (Saga), et du monitoring de broker.</li>
+  <li><strong>Pas de transaction ACID distribuée simple :</strong> En asynchrone, il est impossible de faire un <code>ROLLBACK</code> immédiat si une étape ultérieure échoue ; il faut écrire des transactions de compensation.</li>
+</ol>
+
+<h3>Question 4 <span class="pts">(4 pts)</span> : Méthode de décision synchrone vs asynchrone + Application aux 5 cas</h3>
+<div class="highlight-box">
+  <strong>Règle d'or de décision :</strong><br>
+  • Si l'émetteur a <strong>impérativement besoin de la réponse pour continuer</strong> son traitement ou répondre à l'utilisateur ➔ <strong>Synchrone (REST/HTTP)</strong>.<br>
+  • Si l'action consiste à <strong>annoncer qu'un fait s'est produit</strong> (notification, journalisation, traitement différé) ➔ <strong>Asynchrone (Kafka/RabbitMQ)</strong>.
+</div>
+<table>
+  <thead>
+    <tr><th>Interaction</th><th>Mode</th><th>Justification</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>1. Consulter les emplacements libres</strong></td><td><strong>Synchrone (REST)</strong></td><td>L'utilisateur attend la liste affichée sur son smartphone en temps réel.</td></tr>
+    <tr><td><strong>2. Calculer le prix d'une nuitée (Réservation ➔ Tarification)</strong></td><td><strong>Synchrone (REST)</strong></td><td>Réservation ne peut pas finaliser le devis/panier sans connaître le montant exact.</td></tr>
+    <tr><td><strong>3. Relevé d'une borne vers Consommation</strong></td><td><strong>Asynchrone (MQTT / Kafka)</strong></td><td>Flux continu de capteurs IoT sur réseau instable ; la borne n'attend aucune réponse métier.</td></tr>
+    <tr><td><strong>4. Dépassement de seuil vers Notification</strong></td><td><strong>Asynchrone (Kafka)</strong></td><td>Événement métier. Si l'envoi de SMS/Push est lent ou en panne, la mesure reste valide.</td></tr>
+    <tr><td><strong>5. Fin de séjour vers Facturation</strong></td><td><strong>Asynchrone (Kafka)</strong></td><td>Traitement lourd (calculs, génération PDF, envoi bancaire). Le plaisancier peut quitter le port sans attendre.</td></tr>
+  </tbody>
+</table>
+
+<h3>Question 5 <span class="pts">(4 pts)</span> : Le couplage, réduction par bus, et disparition complète ?</h3>
+<p><strong>Qu'est-ce que le couplage ?</strong> C'est le degré d'interdépendance entre deux composants logiciels. On distingue :</p>
+<ul>
+  <li><em>Couplage spatial :</em> Devoir connaître l'adresse IP, le port ou l'URL de l'autre.</li>
+  <li><em>Couplage temporel :</em> Devoir être tous les deux actifs et disponibles au même instant.</li>
+  <li><em>Couplage de contrat / syntaxique :</em> Connaître le format des données et les interfaces.</li>
+</ul>
+<p><strong>En quoi le bus d'événements le réduit-il ?</strong></p>
+<ul>
+  <li><strong>Supprime le couplage spatial :</strong> Le producteur publie sur un <em>Topic</em> abstrait, sans savoir où habitent les consommateurs.</li>
+  <li><strong>Supprime le couplage temporel :</strong> Si Facturation est arrêtée pour maintenance, les messages patientent dans Kafka.</li>
+  <li><strong>Supprime le couplage d'identité :</strong> Le producteur ne sait même pas <em>qui</em> écoute (1, 5 ou 0 service).</li>
+</ul>
+<p><strong>Le fait-il disparaître complètement ? NON !</strong> Il reste le <strong>couplage de schéma / contrat</strong> : producteur et consommateur doivent toujours s'accorder sur la structure JSON/Avro de l'événement. Si le producteur supprime un champ requis sans précaution, le consommateur plante.</p>
+
+<div class="page-break"></div>
+
+<h2>Partie B. Rôles, protocoles et outils</h2>
+
+<h3>Question 6 <span class="pts">(3 pts)</span> : Différence de rôle API Gateway vs Bus d'événements + Publication directe ?</h3>
+<table>
+  <thead>
+    <tr><th>Critère</th><th>API Gateway (ex. Spring Cloud Gateway)</th><th>Bus d'événements (ex. Apache Kafka)</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>Rôle principal</strong></td><td>Point d'entrée unique Nord-Sud (extérieur vers intérieur). Achemine les requêtes HTTP.</td><td>Canal de transport Est-Ouest (entre microservices). Diffuse des flux d'événements.</td></tr>
+    <tr><td><strong>Style</strong></td><td>Synchrone (requête/réponse HTTP/REST, WebSocket).</td><td>Asynchrone (publication/abonnement, streaming).</td></tr>
+    <tr><td><strong>Fonctions</strong></td><td>Routage, authentification JWT, CORS, rate limiting.</td><td>Rétention de messages, rejeu, partitionnement.</td></tr>
+  </tbody>
+</table>
+<p><strong>Un frontend peut-il publier directement sur le bus ?</strong><br>
+<strong>En règle générale, NON (fortement déconseillé en production).</strong> Les navigateurs ou téléphones ne doivent pas être connectés directement aux ports de Kafka (9092) pour des raisons de sécurité (exposition du cluster, pas de validation métier fine, gestion des secrets impossible sur un terminal client). Le frontend appelle l'API Gateway ou un microservice via REST/WebSocket, qui valide la requête et publie ensuite l'événement dans Kafka.</p>
+
+<h3>Question 7 <span class="pts">(3 pts)</span> : Distinguer message, commande et événement. Lequel privilégier ?</h3>
+<ul>
+  <li><strong>Message :</strong> Terme générique pour tout paquet de données transporté par un bus (enveloppe contenant des métadonnées et un payload).</li>
+  <li><strong>Commande :</strong> Intention / Ordre adressé à <em>un destinataire précis</em> pour effectuer une action (verbe à l'impératif : <code>CouperBorne</code>, <code>GenererFacture</code>). Peut être rejetée.</li>
+  <li><strong>Événement :</strong> Constat d'un <em>fait déjà survenu et immuable</em> dans le passé (verbe au participe passé : <code>ConsommationRelevee</code>, <code>SejourCloture</code>). Ne peut pas être annulé ou refusé.</li>
+</ul>
+<p><strong>Lequel privilégier dans Smart Marina ? L'ÉVÉNEMENT (Event-Driven Architecture).</strong><br>
+Car il assure le couplage le plus lâche : un microservice émetteur annonce ce qui s'est produit, sans ordonner quoi faire. De nouveaux services (ex. Reporting, Télégestion) peuvent s'abonner au flux sans modifier une seule ligne du service producteur.</p>
+
+<h3>Question 8 <span class="pts">(4 pts)</span> : File (point-à-point) vs Topic (pub/sub) + Combinaison dans Smart Marina</h3>
+<ul>
+  <li><strong>File (Point-à-Point) :</strong> Un message n'est traité que par <strong>un seul consommateur</strong> parmi ceux qui écoutent la file. Utile pour distribuer la charge de travail (Worker Queue).</li>
+  <li><strong>Topic (Publication / Abonnement) :</strong> Le message est diffusé à <strong>tous les abonnés</strong> enregistrés sur le sujet.</li>
+</ul>
+<p><strong>Choix et combinaison dans Smart Marina :</strong><br>
+On choisit un <strong>Topic Kafka</strong> (ex. <code>consumption-events</code>), combiné avec le mécanisme des <strong>Consumer Groups</strong> :</p>
+<ol>
+  <li>Le message est diffusé à la fois au groupe <code>notification-group</code> ET au groupe <code>facturation-group</code> (<strong>modèle Topic / Pub-Sub</strong>).</li>
+  <li>À l'intérieur de <code>notification-group</code>, si on lance 3 instances du microservice, chaque relevé n'est traité que par une seule instance (<strong>modèle File / Point-à-point</strong>).</li>
+</ol>
+
+<h3>Question 9 <span class="pts">(4 pts)</span> : Protocoles dans Smart Marina (au moins 5) et chaîne complète depuis la borne</h3>
+<ol>
+  <li><strong>MQTT / CoAP :</strong> Protocole IoT ultra-léger et adapté aux réseaux instables pour faire remonter les mesures de la borne.</li>
+  <li><strong>HTTP / REST (JSON) :</strong> Pour les échanges synchrones entre frontends, API Gateway et services métier.</li>
+  <li><strong>Kafka Protocol (TCP binaire) :</strong> Pour l'échange asynchrone haut débit et persistant entre microservices.</li>
+  <li><strong>WebSocket / SSE :</strong> Pour notifier en direct le navigateur ou l'application mobile du plaisancier.</li>
+  <li><strong>JDBC / PostgreSQL Protocol :</strong> Pour les requêtes SQL internes entre chaque microservice et sa base PostgreSQL.</li>
+</ol>
+<p><strong>Chaîne complète depuis la borne :</strong><br>
+<code>Borne physique</code> ➔ <em>(MQTT)</em> ➔ <code>Passerelle IoT / Broker MQTT</code> ➔ <em>(REST ou Kafka)</em> ➔ <code>consumption-service</code> ➔ <em>(JDBC)</em> ➔ <code>PostgreSQL (5435)</code> ➔ <em>(Kafka TCP)</em> ➔ <code>Broker Kafka (Topic: consumption-events)</code> ➔ <code>notification-service</code> ➔ <em>(WebSocket/Firebase)</em> ➔ <code>Smartphone du Plaisancier</code>.</p>
+
+<h3>Question 10 <span class="pts">(4 pts)</span> : Comparaison Kafka vs RabbitMQ (3 critères) + Choix pour Smart Marina</h3>
+<table>
+  <thead>
+    <tr><th>Critère</th><th>Apache Kafka</th><th>RabbitMQ</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>Modèle & Persistance</strong></td><td><strong>Journal d'événements distribué (Log-centric)</strong> : les messages sont conservés sur disque pendant X jours, même après lecture. Permet le rejeu.</td><td><strong>File de messages (Queue-centric)</strong> : les messages sont supprimés dès qu'ils sont acquittés (ACK) par le consommateur.</td></tr>
+    <tr><td><strong>Capacité & Débit</strong></td><td>Extrêmement élevé (millions de messages/seconde), passage à l'échelle par partitionnement horizontal.</td><td>Très rapide mais limité par la mémoire vive lors des pics massifs.</td></tr>
+    <tr><td><strong>Routage</strong></td><td>Routage simple par nom de topic et clé de partition.</td><td>Routage très riche et flexible (Direct, Topic, Fanout, Headers Exchanges).</td></tr>
+  </tbody>
+</table>
+<p><strong>Justification du choix pour Smart Marina :</strong><br>
+<strong>Apache Kafka</strong> est le choix idéal car les relevés de consommation constituent un flux chronologique continu (streaming de données IoT). La persistance de Kafka permet le <strong>rejeu historique</strong> (indispensable si le service de facturation a un bug et doit recalculer le mois passé, ou pour alimenter un nouveau service d'analyse de données).</p>
+
+<h3>Question 11 <span class="pts">(4 pts)</span> : Topic, Partition, Offset, Clé, Consumer Group + Choix de clé des bornes</h3>
+<ul>
+  <li><strong>Topic :</strong> La catégorie logique dans laquelle les messages sont publiés (ex. : <code>consumption-events</code>).</li>
+  <li><strong>Partition :</strong> Sous-division ordonnée et immuable d'un topic permettant le parallélisme sur plusieurs disques/serveurs.</li>
+  <li><strong>Offset :</strong> Identifiant séquentiel unique attribué à chaque message au sein d'une partition, servant de curseur de lecture.</li>
+  <li><strong>Clé (Message Key) :</strong> Donnée optionnelle utilisée pour déterminer dans quelle partition le message doit être stocké.</li>
+  <li><strong>Consumer Group :</strong> Ensemble d'instances de consommateurs coopérant pour lire un topic. Chaque partition n'est attribuée qu'à un seul membre du groupe.</li>
+</ul>
+<p><strong>Choix de clé pour les relevés de bornes : <code>pedestalId</code>.</strong><br>
+<strong>Conséquence fondamentale :</strong> Kafka applique un hachage sur la clé (<code>hash(pedestalId) % nb_partitions</code>). Tous les relevés d'une même borne sont garantis d'être enregistrés dans la <strong>même partition</strong>, garantissant un <strong>ordre chronologique strict</strong> de traitement pour chaque borne.</p>
+
+<div class="page-break"></div>
+
+<h2>Partie C. Fiabilité, cohérence et pièges</h2>
+
+<h3>Question 12 <span class="pts">(4 pts)</span> : Garanties de livraison + Choix pour Facturation et précaution</h3>
+<ol>
+  <li><strong>Au plus une fois (At-most-once) :</strong> Le message est envoyé sans garantie d'arrivée. Zéro doublon mais risque de perte (utilisé pour les relevés météo non critiques).</li>
+  <li><strong>Au moins une fois (At-least-once) :</strong> Le message est renvoyé tant qu'aucun accusé de réception (ACK) n'est confirmé. Aucune perte, mais risque de doublons.</li>
+  <li><strong>Exactement une fois (Exactly-once) :</strong> Garantie stricte sans perte ni doublon (très coûteuse et limitée souvent à l'écosystème Kafka Streams).</li>
+</ol>
+<p><strong>Choix pour Facturation :</strong> <strong>Au moins une fois (At-least-once)</strong>.<br>
+<strong>Précaution obligatoire :</strong> Le consommateur de Facturation doit être <strong>strictement idempotent</strong> (ex. mémoriser les identifiants d'événements déjà facturés) pour ne jamais prélever deux fois le compte d'un plaisancier si un message est délivré deux fois.</p>
+
+<h3>Question 13 <span class="pts">(4 pts)</span> : Qu'est-ce que l'idempotence, pourquoi est-elle vitale ? Comment l'implémenter ?</h3>
+<p><strong>Définition :</strong> Une opération est idempotente si l'exécuter plusieurs fois de suite avec les mêmes paramètres produit exactement le même effet que de l'exécuter une seule fois.</p>
+<p><strong>Pourquoi est-elle vitale en asynchrone ?</strong><br>
+En réseau distribué, les pannes de timeout forcent les renvois (retries). Si un consommateur traite un message mais que le réseau coupe avant l'ACK, Kafka lui renverra le message. Sans idempotence, le client sera facturé deux fois ou recevra deux SMS.</p>
+<p><strong>Comment l'implémenter ?</strong></p>
+<ol>
+  <li><strong>Clé d'idempotence (Idempotency Key / Event ID) :</strong> Chaque événement possède un identifiant unique universel (UUID).</li>
+  <li><strong>Table de déduplication :</strong> Avant de faire le traitement, le service vérifie dans une table SQL (ex. <code>processed_events(event_id)</code>) si l'UUID existe déjà.</li>
+  <li>Si oui ➔ Il ignore le traitement et valide l'ACK immédiatement.</li>
+  <li>Si non ➔ Il effectue le traitement et insère l'UUID dans la même transaction locale.</li>
+</ol>
+
+<h3>Question 14 <span class="pts">(5 pts)</span> : Problème de la « double écriture » + Pattern Transactional Outbox</h3>
+<p><strong>Le problème :</strong> Un service doit écrire dans sa base PostgreSQL ET publier un événement dans Kafka :</p>
+<pre><code>// SCÉNARIO BUGUÉ
+repository.save(consumption); // Étape 1 : OK (en base)
+// CRASH MACHINE ICI !
+kafkaTemplate.send("topic", event); // Étape 2 : JAMAIS EXÉCUTÉE !
+// Résultat : Incohérence totale entre la base et le reste du système.
+</code></pre>
+<p>Comme PostgreSQL et Kafka sont deux systèmes distribués distincts, ils ne peuvent pas partager une transaction ACID classique (sauf protocole 2PC lourd et déconseillé).</p>
+<p><strong>Solution : Le Pattern Transactional Outbox</strong></p>
+<ol>
+  <li>On crée une table <code>outbox_events</code> dans la base de données PostgreSQL du microservice.</li>
+  <li>Dans <strong>une seule transaction SQL locale</strong>, le service insère la consommation ET insère l'événement dans la table <code>outbox_events</code>. Si l'un échoue, tout est annulé.</li>
+  <li>Un processus tiers (un composant comme Debezium lisant les Change Data Capture (CDC), ou un batch planifié) lit la table <code>outbox_events</code> et publie les messages dans Kafka, puis marque la ligne comme publiée.</li>
+</ol>
+<p><strong>Limites de l'Outbox :</strong> Nécessite un composant supplémentaire (ex. Kafka Connect + Debezium), génère des écritures supplémentaires en base de données, et délivre les messages en <em>At-least-once</em> (impose l'idempotence côté consommateur).</p>
+
+<h3>Question 15 <span class="pts">(3 pts)</span> : Garantir l'ordre des événements + Ce qu'on ne peut pas supposer</h3>
+<p><strong>Comment garantir l'ordre :</strong></p>
+<ul>
+  <li>Dans Kafka, l'ordre est garanti <strong>uniquement au sein d'une même partition</strong>.</li>
+  <li>Il faut donc obligatoirement affecter une <strong>clé métier consistante</strong> (ex. <code>pedestalId</code>) pour que tous les événements liés à une même entité aillent sur la même partition.</li>
+  <li>Côté producteur, il faut activer <code>enable.idempotence=true</code> et <code>max.in.flight.requests.per.connection=1</code> (ou 5 avec l'idempotence) pour éviter qu'un retry d'envoi n'inverse deux paquets.</li>
+</ul>
+<p><strong>Ce qu'on ne peut JAMAIS supposer :</strong></p>
+<ul>
+  <li>On ne peut pas supposer que deux messages envoyés sur <strong>deux partitions distinctes</strong> arriveront dans l'ordre de leur émission.</li>
+  <li>On ne peut pas supposer que l'horloge système (timestamp) est synchronisée à la milliseconde parfaite entre serveurs physiques distincts (dérive d'horloge).</li>
+</ul>
+
+<h3>Question 16 <span class="pts">(4 pts)</span> : Gestion des échecs d'un consommateur + Stratégie complète</h3>
+<p><strong>Distinction des types d'erreurs :</strong></p>
+<ul>
+  <li><strong>Erreurs transitoires (récupérables) :</strong> Coupure réseau temporaire, base de données momentanément verrouillée, timeout d'un service tiers. ➔ Le message doit être rejoué.</li>
+  <li><strong>Erreurs fatales (non récupérables / "Poison Pills") :</strong> JSON corrompu, division par zéro, violation de contrainte d'intégrité métier, champ obligatoire manquant. ➔ Rejouer en boucle bloquera la partition indéfiniment.</li>
+</ul>
+<p><strong>Stratégie complète de résilience :</strong></p>
+<ol>
+  <li><strong>Retry avec Backoff exponentiel :</strong> Réessayer immédiatement, puis après 1s, 5s, 30s pour laisser le temps au réseau de se rétablir.</li>
+  <li><strong>Dead Letter Queue (DLQ / Topic des morts) :</strong> Si l'échec persiste après le nombre maximal d'essais (ex. 3 tentatives), le message est déplacé dans un topic dédié <code>consumption-events-dlq</code>.</li>
+  <li><strong>Alerte et intervention humaine :</strong> La partition principale continue son travail sans être bloquée, et les équipes d'exploitation peuvent analyser les messages dans la DLQ et les rejouer après correction.</li>
+</ol>
+
+<h3>Question 17 <span class="pts">(5 pts)</span> : Cohérence éventuelle ? Pattern Saga ? Scénario Smart Marina avec compensation</h3>
+<p><strong>Cohérence éventuelle (Eventual Consistency) :</strong> Modèle où les différentes bases de données ne sont pas synchronisées à la même milliseconde, mais convergent vers un état cohérent après un certain laps de temps.</p>
+<p><strong>Pattern Saga :</strong> Séquence de transactions locales au sein de chaque microservice. Chaque transaction met à jour la base de données locale et publie un événement déclenchant l'étape suivante. Si une étape échoue, la Saga exécute des <strong>transactions de compensation</strong> (annulation logique en sens inverse).</p>
+<p><strong>Scénario Smart Marina « Réservation d'emplacement avec paiement » :</strong></p>
+<ol>
+  <li><em>Étape 1 (Service Réservation) :</em> Crée la réservation à l'état <code>EN_ATTENTE_PAIEMENT</code> et émet <code>ReservationCreee</code>.</li>
+  <li><em>Étape 2 (Service Emplacements) :</em> Bloque l'emplacement de quai et émet <code>EmplacementBloque</code>.</li>
+  <li><em>Étape 3 (Service Paiement) :</em> Tente de débiter la carte bancaire ➔ <strong>ÉCHEC (solde insuffisant)</strong> ➔ émet <code>PaiementEchoue</code>.</li>
+  <li><strong>Transactions de compensation :</strong>
+    <ul>
+      <li>Le Service Emplacements reçoit <code>PaiementEchoue</code> ➔ Débloque le quai (état <code>DISPONIBLE</code>).</li>
+      <li>Le Service Réservation reçoit <code>PaiementEchoue</code> ➔ Passe la réservation à <code>ANNULEE</code> et notifie le plaisancier.</li>
+    </ul>
+  </li>
+</ol>
+
+<h3>Question 18 <span class="pts">(3 pts)</span> : Versionnement d'événement ? Enveloppe standard</h3>
+<p><strong>Pourquoi ?</strong> Les systèmes évoluent dans le temps. Si on ajoute un champ ou change un type de donnée dans un événement, les anciens consommateurs encore en production ne doivent pas planter (compatibilité ascendante et descendante).</p>
+<p><strong>Comment ?</strong> En incluant le numéro de version dans le message et en utilisant une enveloppe standardisée (type <em>CloudEvents</em>) :</p>
+<pre><code>{
+  "specversion": "1.0",
+  "id": "e84b2a30-8a12-4f8a-9817-21a4f910b831",
+  "type": "com.xyz.smartmarina.consumption.recorded",
+  "source": "/pedestals/3",
+  "time": "2026-11-19T08:30:00Z",
+  "datacontenttype": "application/json",
+  "schemaversion": "2.0",
+  "data": {
+    "pedestalId": 3,
+    "type": "ELECTRICITY",
+    "value": 75.5,
+    "unit": "kWh"
+  }
+}
+</code></pre>
+
+<div class="page-break"></div>
+
+<h2>Partie D. Implémentation avec Spring Boot</h2>
+
+<h3>Question 19 <span class="pts">(4 pts)</span> : Structure JSON de l'événement ConsommationReleve & Justification</h3>
+<pre><code>{
+  "eventId": "b9f2c694-5cb4-42b3-90d2-97217594bf32",
+  "eventType": "ConsommationRelevee",
+  "timestamp": "2026-11-19T08:45:00Z",
+  "pedestalId": 3,
+  "portId": 1,
+  "type": "ELECTRICITY",
+  "value": 75.50,
+  "unit": "kWh"
+}
+</code></pre>
+<p><strong>Justification des choix :</strong></p>
+<ul>
+  <li><code>eventId</code> (UUID) : Vital pour permettre la déduplication et assurer l'<strong>idempotence</strong> côté consommateur.</li>
+  <li><code>timestamp</code> (ISO 8601 UTC) : Horodatage précis de la mesure pour la facturation et les graphiques de reporting.</li>
+  <li><code>pedestalId</code> : Identifiant de la borne, <strong>choisi comme clé de message Kafka</strong> pour garantir l'ordre séquentiel.</li>
+  <li><code>portId</code> : Évite aux consommateurs de devoir rappeler le service borne pour savoir à quel port elle appartient.</li>
+  <li><code>value</code> & <code>unit</code> : Décimal précis et unité explicite pour éviter toute confusion entre litres et $m^3$ ou Watts et kWh.</li>
+</ul>
+
+<h3>Question 20 <span class="pts">(4 pts)</span> : Publication Spring Kafka de ConsommationReleve & Paramètres de fiabilité</h3>
+<pre><code>@Service
+public class ConsumptionEventProducer {
+
+    private final KafkaTemplate&lt;String, ConsumptionEvent&gt; kafkaTemplate;
+
+    public ConsumptionEventProducer(KafkaTemplate&lt;String, ConsumptionEvent&gt; kafkaTemplate) {
+        this.kafkaTemplate = kafkaTemplate;
+    }
+
+    public void publish(ConsumptionEvent event) {
+        String key = String.valueOf(event.pedestalId());
+        // Envoi asynchrone non-bloquant retournant un CompletableFuture
+        CompletableFuture&lt;SendResult&lt;String, ConsumptionEvent&gt;&gt; future = 
+                kafkaTemplate.send("consumption-events", key, event);
+
+        future.whenComplete((result, ex) -&gt; {
+            if (ex == null) {
+                // Succès : log partition et offset
+            } else {
+                // Échec : alerter ou journaliser l'erreur
+            }
+        });
+    }
+}
+</code></pre>
+<p><strong>Paramètres de fiabilité du producteur (dans <code>application.properties</code>) :</strong></p>
+<ul>
+  <li><code>acks=all</code> : Le broker n'acquitte que lorsque tous les réplicas synchronisés ont persisté le message (zéro perte).</li>
+  <li><code>retries=Integer.MAX_VALUE</code> : Réessayer automatiquement en cas d'erreur réseau transitoire.</li>
+  <li><code>enable.idempotence=true</code> : Garantit que les retries ne produiront aucun doublon dans la partition Kafka.</li>
+</ul>
+
+<h3>Question 21 <span class="pts">(5 pts)</span> : Consommateur idempotent pour le service Facturation</h3>
+<pre><code>@Component
+public class BillingEventListener {
+
+    private final ProcessedEventRepository eventRepo;
+    private final BillingService billingService;
+
+    public BillingEventListener(ProcessedEventRepository eventRepo, BillingService billingService) {
+        this.eventRepo = eventRepo;
+        this.billingService = billingService;
+    }
+
+    @KafkaListener(topics = "consumption-events", groupId = "facturation-group")
+    @Transactional
+    public void onConsumptionReceived(ConsumptionEvent event) {
+        // 1. Vérification d'idempotence
+        if (eventRepo.existsById(event.eventId())) {
+            return; // Déjà traité : on ignore
+        }
+
+        // 2. Traitement métier
+        billingService.applyConsumption(event);
+
+        // 3. Enregistrement de l'événement traité dans la même transaction
+        eventRepo.save(new ProcessedEvent(event.eventId(), LocalDateTime.now()));
+    }
+}
+</code></pre>
+<ul>
+  <li><code>groupId = "facturation-group"</code> : Assure que le service de facturation maintient son propre curseur (offset) indépendant de celui des notifications.</li>
+  <li><code>@Transactional</code> : Lie la mise à jour de la facture et l'insertion de l'id d'événement dans une transaction atomique.</li>
+</ul>
+
+<h3>Question 22 <span class="pts">(3 pts)</span> : Tester un flux asynchrone (Outils & 4 cas impératifs)</h3>
+<p><strong>Outils :</strong> <code>@EmbeddedKafka</code> (courtier Kafka en mémoire pour les tests unitaires Spring), <strong>Testcontainers</strong> (véritable conteneur Docker Kafka pour les tests d'intégration), et <strong>Awaitility</strong> (bibliothèque pour tester les assertions avec délai d'attente asynchrone).</p>
+<p><strong>4 cas à tester impérativement :</strong></p>
+<ol>
+  <li><strong>Cas nominal :</strong> L'événement est publié, le consommateur le reçoit et met à jour sa base avec succès.</li>
+  <li><strong>Cas du doublon (Idempotence) :</strong> Envoyer deux fois le même événement avec le même <code>eventId</code> et vérifier que le solde n'est facturé qu'une seule fois.</li>
+  <li><strong>Cas de l'erreur transitoire :</strong> Simuler une indisponibilité temporaire et vérifier le mécanisme de retry avec succès à la 2ème tentative.</li>
+  <li><strong>Cas du message empoisonné (DLQ) :</strong> Envoyer un message corrompu et vérifier qu'il atterrit dans la Dead Letter Queue sans bloquer les messages suivants.</li>
+</ol>
+
+<h3>Question 23 <span class="pts">(3 pts)</span> : Traçabilité distribuée & Métriques</h3>
+<p><strong>Comment suivre un flux à travers plusieurs services ?</strong><br>
+Grâce à la <strong>Traçabilité Distribuée (Distributed Tracing)</strong> via <strong>Micrometer Tracing</strong> (avec OpenTelemetry ou Zipkin/Brave) :</p>
+<ul>
+  <li><code>TraceId</code> : Identifiant unique généré à l'entrée (API Gateway) et propagé dans les en-têtes HTTP (<code>traceparent</code>) et les en-têtes de messages Kafka (Kafka Headers). Il permet de filtrer tous les logs de tous les services pour une seule transaction.</li>
+  <li><code>SpanId</code> : Identifiant de chaque étape de traitement individuel.</li>
+</ul>
+<p><strong>Métriques essentielles à surveiller :</strong></p>
+<ol>
+  <li><strong>Consumer Lag :</strong> Le nombre de messages en retard dans Kafka non encore traités par le consommateur (indicateur n°1 de saturation).</li>
+  <li><strong>Débit (Throughput) :</strong> Nombre de messages/seconde produits et consommés.</li>
+  <li><strong>Taux d'erreur / Messages DLQ :</strong> Nombre d'échecs de désérialisation ou de rejets métier.</li>
+</ol>
+
+<h3>Question 24 <span class="pts">(3 pts)</span> : Comment sécuriser le bus et les échanges entre services ?</h3>
+<ol>
+  <li><strong>Chiffrement en transit (TLS / mTLS) :</strong> Toutes les communications entre microservices et le broker Kafka sont chiffrées en TLS (port 9093 avec certificats SSL).</li>
+  <li><strong>Authentification des clients Kafka :</strong> Utilisation de certificats clients mutuels (mTLS) ou identifiants sécurisés via <strong>SASL/SCRAM-SHA-512</strong> ou <strong>OAuth2 / OIDC</strong>.</li>
+  <li><strong>Autorisations strictes (ACLs Kafka) :</strong> Par exemple, seul <code>consumption-service</code> a le droit d'écrire sur <code>consumption-events</code>, et <code>notification-service</code> n'a qu'un droit de lecture (READ).</li>
+  <li><strong>Sécurité des échanges REST internes :</strong> Utilisation de tokens <strong>JWT</strong> propagés depuis l'API Gateway ou mTLS entre microservices.</li>
+</ol>
+
+<h3>Question 25 <span class="pts">(3 pts)</span> : Panne du service Notification lors d'une réservation (Synchrone vs Asynchrone)</h3>
+<p><strong>Dans une architecture 100% synchrone :</strong></p>
+<ul>
+  <li>Le service Réservation appelle le service Notification via REST. Comme Notification est en panne, la requête tombe en timeout (erreur 500 / 504).</li>
+  <li><strong>Conséquence désastreuse :</strong> La réservation échoue pour le plaisancier, alors que l'emplacement de quai était libre et le paiement prêt !</li>
+</ul>
+<p><strong>Dans une architecture asynchrone :</strong></p>
+<ul>
+  <li>Réservation valide le quai, encaisse le paiement et publie l'événement <code>ReservationConfirmee</code> dans Kafka.</li>
+  <li>La réservation <strong>réussit immédiatement</strong> pour le plaisancier (201 Created). Le message attend sagement dans Kafka. Dès que Notification redémarre, il dépile le message et envoie le SMS de confirmation.</li>
+</ul>
+<p><strong>Protections indispensables côté synchrone :</strong></p>
+<ol>
+  <li><strong>Circuit Breaker (Coupe-circuit, ex. Resilience4j) :</strong> Dès que Notification échoue à répétition, le disjoncteur s'ouvre pour ne plus faire patienter les clients dans le vide.</li>
+  <li><strong>Timeouts courts :</strong> Définir un timeout strict (ex. 1.5 seconde) pour ne pas bloquer les threads du serveur.</li>
+  <li><strong>Fallback gracieux :</strong> Si l'appel Notification échoue, journaliser l'erreur et terminer la réservation quand même au lieu de bloquer l'utilisateur.</li>
+</ol>
+
+<div class="page-break"></div>
+
+<h2>Partie E. Synthèse et validation du projet</h2>
+
+<h3>Question 26 <span class="pts">(5 pts)</span> : Scénario complet « De la borne à la facture »</h3>
+<table>
+  <thead>
+    <tr>
+      <th>Étape</th>
+      <th>Acteurs & Interaction</th>
+      <th>Mode</th>
+      <th>Protocole</th>
+      <th>Événement / Payload</th>
+      <th>Garantie de fiabilité</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>1. Mesure</strong></td>
+      <td>Borne physique ➔ Passerelle IoT</td>
+      <td>Asynchrone</td>
+      <td>MQTT</td>
+      <td>Payload télémétrie : <code>{borne:3, kWh:75.5}</code></td>
+      <td>QoS 1 (At least once)</td>
+    </tr>
+    <tr>
+      <td><strong>2. Réception</strong></td>
+      <td>Passerelle ➔ <code>consumption-service</code></td>
+      <td>Synchrone ou batch</td>
+      <td>HTTP REST</td>
+      <td><code>POST /api/v1/consumptions</code></td>
+      <td>Code HTTP 201 Created</td>
+    </tr>
+    <tr>
+      <td><strong>3. Validation</strong></td>
+      <td><code>consumption-service</code> ➔ <code>pedestal-service</code></td>
+      <td>Synchrone</td>
+      <td>HTTP REST</td>
+      <td><code>GET /api/v1/pedestals/3</code></td>
+      <td>Vérification de présence physique</td>
+    </tr>
+    <tr>
+      <td><strong>4. Persistance</strong></td>
+      <td><code>consumption-service</code> ➔ PostgreSQL local</td>
+      <td>Synchrone local</td>
+      <td>JDBC / SQL</td>
+      <td><code>INSERT INTO consumptions...</code></td>
+      <td>Transaction ACID locale</td>
+    </tr>
+    <tr>
+      <td><strong>5. Publication</strong></td>
+      <td><code>consumption-service</code> ➔ Broker Kafka</td>
+      <td>Asynchrone</td>
+      <td>Kafka TCP</td>
+      <td>Événement : <code>ConsommationRelevee</code> (clé: "3")</td>
+      <td><code>acks=all</code>, idempotent producer</td>
+    </tr>
+    <tr>
+      <td><strong>6. Alerte</strong></td>
+      <td>Broker Kafka ➔ <code>notification-service</code></td>
+      <td>Asynchrone</td>
+      <td>Kafka TCP</td>
+      <td>Lecture du topic <code>consumption-events</code></td>
+      <td>Consumer Group <code>notification-group</code></td>
+    </tr>
+    <tr>
+      <td><strong>7. Facturation</strong></td>
+      <td>Broker Kafka ➔ <code>facturation-service</code></td>
+      <td>Asynchrone</td>
+      <td>Kafka TCP</td>
+      <td>Calcul du montant et débit du compte</td>
+      <td>Table de déduplication (Idempotence)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>Question 27 <span class="pts">(3 pts)</span> : Cinq erreurs fréquentes de conception asynchrone et leurs conséquences</h3>
+<ol>
+  <li><strong>Oublier l'idempotence côté consommateur :</strong><br>
+    <em>Conséquence :</em> En cas de renvoi réseau ou de rebalance de groupe Kafka, les messages délivrés deux fois provoqueront des facturations doubles ou des doublons de notifications.</li>
+  <li><strong>Mettre de la logique métier synchrone dans l'API Gateway :</strong><br>
+    <em>Conséquence :</em> L'API Gateway devient un goulot d'étranglement monolithique lourd, fragile et difficile à maintenir, violant le principe de responsabilité unique.</li>
+  <li><strong>Ne pas définir de clé de partitionnement sur un flux séquentiel :</strong><br>
+    <em>Conséquence :</em> Les événements d'une même borne sont répartis aléatoirement sur plusieurs partitions. Le consommateur reçoit le relevé de fin de journée avant celui du matin, générant des calculs de consommation aberrants.</li>
+  <li><strong>Absence de Dead Letter Queue (DLQ) pour les messages empoisonnés :</strong><br>
+    <em>Conséquence :</em> Dès qu'un message au format incorrect arrive, le consommateur plante en boucle sur le même message, bloquant complètement la partition pour tous les messages suivants.</li>
+  <li><strong>Utiliser Kafka pour des requêtes où l'utilisateur attend une réponse immédiate :</strong><br>
+    <em>Conséquence :</em> Complexité extrême de corrélation de requêtes (Request-Reply asynchrone via temporisation) et temps de réponse inacceptable pour l'utilisateur final.</li>
+</ol>
+
+</body>
+</html>

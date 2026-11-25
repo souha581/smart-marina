@@ -2,6 +2,12 @@ server:
   port: 8080
 
 spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI:http://localhost:8180/realms/smart-marina}
+          jwk-set-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI:http://localhost:8180/realms/smart-marina/protocol/openid-connect/certs}
   application:
     name: api-gateway
   cloud:
@@ -23,3 +29,12 @@ spring:
               uri: ${CONSUMPTION_SERVICE_URL:http://localhost:8083}
               predicates:
                 - Path=/api/v1/consumptions/**
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,gateway
+  endpoint:
+    health:
+      show-details: always

@@ -155,10 +155,25 @@ services:
       PORT_SERVICE_URL: http://port-service:8081
       PEDESTAL_SERVICE_URL: http://pedestal-service:8082
       CONSUMPTION_SERVICE_URL: http://consumption-service:8083
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://localhost:8180/realms/smart-marina
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/smart-marina/protocol/openid-connect/certs
     depends_on:
       - port-service
       - pedestal-service
       - consumption-service
+      - keycloak
+    networks:
+      - smart-marina-network
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    container_name: keycloak
+    command: start-dev
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "8180:8080"
     networks:
       - smart-marina-network
 
